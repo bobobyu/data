@@ -1,7 +1,7 @@
 import random
 import time
 
-
+print('HI github')
 class Progress:
     def __str__(self):
         return f'{self.ID}\t\t\t' \
