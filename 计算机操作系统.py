@@ -29,6 +29,7 @@ class ProgressControlScheduling:
 
     def __init__(self, num_of_progress: int) -> None:
         pre_PCB: Progress = Progress(ID=1)
+        self.PCB_length: int = num_of_progress
         self.count_PCB: int = num_of_progress
         self.head_PCB: Progress = pre_PCB
         self.PCB_list: list = [pre_PCB]
@@ -61,7 +62,7 @@ class ProgressControlScheduling:
         print(f'{time} time.Current PCB ID:{head.ID if not current_PCB else current_PCB.ID}' if time <= len(
             self.PCB_list) else f'Finish {name}.Show queue:')
         print(f'ID\t\tArriveTime\t\tCPUTime<Occupied>\t\tAllTime\t\tPriority\tState')
-        if time > len(self.PCB_list) and name not in  ['PSA']:
+        if time > self.PCB_length and name not in ['PSA', 'SJF']:
             head = self.head_PCB
         while head:
             if head.Priority >= 0:
@@ -70,7 +71,7 @@ class ProgressControlScheduling:
         print()
 
     def conclusion(self, total_waiting_time: int):
-        print(f'The average time of each progress：{total_waiting_time / len(self.PCB_list)}s.')
+        print(f'The average time of each progress：{total_waiting_time / self.PCB_length}s.')
         print(f'Total time of all progress：{total_waiting_time}s.')
 
     def _sort_PCB(self, key: str) -> list:
@@ -81,19 +82,20 @@ class ProgressControlScheduling:
 
     def reset(self, queue_list: list) -> Progress:
         for progress_index in range(len(queue_list) - 1):
+            queue_list[progress_index].next = queue_list[progress_index + 1]
+        queue_list[-1].next = None
+        head: Progress = queue_list[0]
+        yield head
+        for progress_index in range(len(queue_list) - 1):
             queue_list[progress_index].CPUTime, queue_list[progress_index].AllTime = queue_list[
                                                                                          progress_index].AllTime, \
                                                                                      queue_list[
                                                                                          progress_index].CPUTime
             queue_list[progress_index].State = ProgressControlScheduling.READY
             queue_list[progress_index].ArriveTime = 0
-            queue_list[progress_index].next = queue_list[progress_index + 1]
         queue_list[-1].CPUTime, queue_list[-1].AllTime = queue_list[-1].AllTime, queue_list[-1].CPUTime
         queue_list[-1].State = ProgressControlScheduling.READY
         queue_list[-1].ArriveTime = 0
-        queue_list[-1].next = None
-        head: Progress = queue_list[0]
-        return head
 
     def _FCFS(self):
         print(f'\n{"-" * 35}Launch FCFS{"-" * 35}\n')
@@ -114,22 +116,26 @@ class ProgressControlScheduling:
         self._Display(current_node, name="FCFS", time=count_time)
         self.conclusion(total_waiting_time=total_waiting_time)
         print(f'\n{"-" * 35} Finish FCFS {"-" * 35}\n')
-        self.reset(self.PCB_list)
+        [_ for _ in self.reset(self.PCB_list)]
 
-    def search_max_prior_PCB(self, head: Progress) -> Progress:
+    def search_special_PCB(self, head: Progress, type: str = 'P') -> Progress:
         pre_PCB: Progress = head
         current_PCB: Progress = head.next
-        pre_max_PCB: Progress = pre_PCB
-        max_PCB: Progress = max(pre_PCB, current_PCB, key=lambda x: x.Priority)
+
+        pre_alternative_PCB: Progress = pre_PCB
+        alternative_PCB: Progress = current_PCB
+
+        compare_dict: dict = {'P': lambda x, y: x.Priority < y.Priority, 'T': lambda x, y: x.AllTime > y.AllTime}
+
         while current_PCB:
-            if max_PCB.Priority < current_PCB.Priority:
-                max_PCB = current_PCB
-                pre_max_PCB = pre_PCB
+            if compare_dict[type](alternative_PCB, current_PCB):
+                alternative_PCB = current_PCB
+                pre_alternative_PCB = pre_PCB
             pre_PCB = current_PCB
             current_PCB = current_PCB.next
-        pre_max_PCB.next = max_PCB.next
-        max_PCB.next = None
-        return max_PCB
+        pre_alternative_PCB.next = alternative_PCB.next
+        alternative_PCB.next = None
+        return alternative_PCB
 
     def add_head(self) -> Progress:
         head_: Progress = Progress(Priority=-1)
@@ -137,54 +143,50 @@ class ProgressControlScheduling:
         return head_
 
     def _SJF(self):
-        print(f'\n{"-" * 35}Launch SJF{"-" * 35}\n')
-        queue_list: list = self.PCB_list[:]
-        service_queue: list = self._sort_PCB(key='AllTime')
+        print(f'\n{"-" * 35} Launch SJF {"-" * 35}\n')
+        queue_list: list = []
         each_waiting_time: int = 0
         total_waiting_time: int = 0
-        for time, progress in enumerate(service_queue):
-            progress.State = ProgressControlScheduling.RUNNING
-            progress.ArriveTime = each_waiting_time
-            each_waiting_time += progress.AllTime
+        count_: int = self.PCB_length
+        head: Progress = self.add_head()
+        while count_:
+            current_node = self.search_special_PCB(head=head, type='T')
+            queue_list.append(current_node)
+            current_node.State = ProgressControlScheduling.RUNNING
+            each_waiting_time += current_node.AllTime
             total_waiting_time += each_waiting_time
-            progress.CPUTime = progress.AllTime
-            progress.AllTime = 0
-            progress.State = ProgressControlScheduling.OVER
-            queue_list.remove(progress)
-            print(f'Search minimum running time PCB:{progress.ID}')
-            print(f'{time + 1} times executed algorithm. Show ready queue: ')
-            print(f'ID\t\tArriveTime\t\tCPUTime<Occupied>\t\tAllTime\t\tPriority\tState')
-            [print(i) for i in queue_list]
-        print(f'The finish queue:')
-        print(f'ID\t\tArriveTime\t\tCPUTime<Occupied>\t\tAllTime\t\tPriority\tState')
-        [print(i) for i in service_queue]
-        print(f'The average time of each progress：{total_waiting_time / len(service_queue)}s.')
-        print(f'Total time of all progress：{total_waiting_time}s.')
-        print(f'{"-" * 35}Finish SJF{"-" * 35}\n')
-        self.reset(self.PCB_list)
+            current_node.AllTime, current_node.CPUTime = 0, current_node.AllTime
+            self._Display(head=head, current_PCB=current_node, name='SJF', time=self.PCB_length - count_ + 1)
+            current_node.State = ProgressControlScheduling.OVER
+            count_ -= 1
+        head = next(self.reset(queue_list=queue_list))
+        self._Display(head=head, name='SJF', time=self.PCB_length + 1)
+        self.conclusion(total_waiting_time=total_waiting_time)
+        print(f'{"-" * 35} Finish SJF {"-" * 35}\n')
+        [_ for _ in self.reset(self.PCB_list)]
 
     def _PS(self):
-        print(f'\n{"-" * 35}Launch 优先调度算法{"-" * 35}\n')
+        print(f'\n{"-" * 35} Launch 优先调度算法 {"-" * 35}\n')
         queue_list: list = []
         head_root: Progress = self.add_head()
-        count_ = len(self.PCB_list)
+        count_ = self.PCB_length
         each_waiting_time: int = 0
         total_waiting_time: int = 0
         while count_:
-            current_PCB: Progress = self.search_max_prior_PCB(head=head_root)
+            current_PCB: Progress = self.search_special_PCB(head=head_root, type='P')
             current_PCB.State = ProgressControlScheduling.RUNNING
             each_waiting_time += current_PCB.AllTime
             total_waiting_time += each_waiting_time
             current_PCB.CPUTime, current_PCB.AllTime = current_PCB.AllTime, 0
-            self._Display(head=head_root, name='PSA', time=len(self.PCB_list) - count_ + 1, current_PCB=current_PCB)
+            self._Display(head=head_root, name='PSA', time=self.PCB_length - count_ + 1, current_PCB=current_PCB)
             count_ -= 1
             queue_list.append(current_PCB)
             current_PCB.State = ProgressControlScheduling.OVER
-        head_PCB = self.reset(queue_list=queue_list)
+        head_PCB = next(self.reset(queue_list=queue_list))
         self._Display(head=head_PCB, name='PSA', time=len(queue_list) + 1)
         self.conclusion(total_waiting_time=total_waiting_time)
         print(f'{"-" * 35}Finish 优先调度算法{"-" * 35}\n')
-        self.reset(self.PCB_list)
+        [_ for _ in self.reset(self.PCB_list)]
 
     def _RR(self):
         time_slice = int(input('Please input the size of time slice:'))
@@ -217,7 +219,7 @@ class ProgressControlScheduling:
         print(f'The average time of each progress：{total_waiting_time / len(all_time_list)}s.')
         print(f'Total time of all progress：{total_waiting_time}s.')
         print(f'{"-" * 35}Finish 优先调度算法{"-" * 35}\n')
-        self.reset(self.PCB_list)
+        [_ for _ in self.reset(self.PCB_list)]
 
 
 test = ProgressControlScheduling(5)

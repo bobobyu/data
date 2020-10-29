@@ -1,7 +1,7 @@
-a = 1
-b = 0
-
-for i in range(10):
-    a, b = b, a
-    b = a+b
-    print(b)
+def x(n):
+    for i in range(10):
+        print(i)
+        yield
+next(x(1))
+print()
+[_ for _ in x(2)]
