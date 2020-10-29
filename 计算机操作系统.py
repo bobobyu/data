@@ -71,8 +71,8 @@ class ProgressControlScheduling:
         print()
 
     def conclusion(self, total_waiting_time: int):
-        print(f'The average time of each progress：{total_waiting_time / self.PCB_length}s.')
-        print(f'Total time of all progress：{total_waiting_time}s.')
+        print(f'The average time of each progress：{total_waiting_time / self.PCB_length:.2f}s.')
+        print(f'Total time of all progress：{total_waiting_time:.2f}s.')
 
     def _sort_PCB(self, key: str) -> list:
         if key == 'AllTime':
@@ -222,5 +222,6 @@ class ProgressControlScheduling:
         [_ for _ in self.reset(self.PCB_list)]
 
 
-test = ProgressControlScheduling(5)
+
+test = ProgressControlScheduling(eval(input('How many progress you want to create:')))
 test.LaunchProgressControlScheduling()
