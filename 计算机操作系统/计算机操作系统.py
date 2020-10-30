@@ -97,27 +97,6 @@ class ProgressControlScheduling:
         queue_list[-1].State = ProgressControlScheduling.READY
         queue_list[-1].ArriveTime = 0
 
-    def _FCFS(self):
-        print(f'\n{"-" * 35}Launch FCFS{"-" * 35}\n')
-        each_waiting_time: int = 0
-        total_waiting_time: int = 0
-        current_node: Progress = self.PCB_list[0]
-        count_time: int = 1
-        while current_node:
-            current_node.State = ProgressControlScheduling.RUNNING
-            each_waiting_time += current_node.AllTime
-            total_waiting_time += each_waiting_time
-            current_node.CPUTime = current_node.AllTime
-            current_node.AllTime = 0
-            self._Display(current_node, name="FCFS", time=count_time)
-            count_time += 1
-            current_node.State = ProgressControlScheduling.OVER
-            current_node = current_node.next
-        self._Display(current_node, name="FCFS", time=count_time)
-        self.conclusion(total_waiting_time=total_waiting_time)
-        print(f'\n{"-" * 35} Finish FCFS {"-" * 35}\n')
-        [_ for _ in self.reset(self.PCB_list)]
-
     def search_special_PCB(self, head: Progress, type: str = 'P') -> Progress:
         pre_PCB: Progress = head
         current_PCB: Progress = head.next
@@ -141,6 +120,27 @@ class ProgressControlScheduling:
         head_: Progress = Progress(Priority=-1)
         head_.next = self.PCB_list[0]
         return head_
+
+    def _FCFS(self):
+        print(f'\n{"-" * 35}Launch FCFS{"-" * 35}\n')
+        each_waiting_time: int = 0
+        total_waiting_time: int = 0
+        current_node: Progress = self.PCB_list[0]
+        count_time: int = 1
+        while current_node:
+            current_node.State = ProgressControlScheduling.RUNNING
+            each_waiting_time += current_node.AllTime
+            total_waiting_time += each_waiting_time
+            current_node.CPUTime = current_node.AllTime
+            current_node.AllTime = 0
+            self._Display(current_node, name="FCFS", time=count_time)
+            count_time += 1
+            current_node.State = ProgressControlScheduling.OVER
+            current_node = current_node.next
+        self._Display(current_node, name="FCFS", time=count_time)
+        self.conclusion(total_waiting_time=total_waiting_time)
+        print(f'\n{"-" * 35} Finish FCFS {"-" * 35}\n')
+        [_ for _ in self.reset(self.PCB_list)]
 
     def _SJF(self):
         print(f'\n{"-" * 35} Launch SJF {"-" * 35}\n')
