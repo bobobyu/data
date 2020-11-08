@@ -39,7 +39,7 @@ class ProgressControlScheduling:
             pre_PCB.next = next_PCB
             pre_PCB = next_PCB
 
-    def LaunchProgressControlScheduling(self):
+    def LaunchProgressControlScheduling(self):  # 此函数用于启动程序
         algorithm: dict = {
             1: self._FCFS,
             2: self._SJF,
@@ -58,7 +58,7 @@ class ProgressControlScheduling:
                 break
             algorithm.get(num, '')()
 
-    def _Display(self, head: Progress, current_PCB: Progress = None, name: str = '', time: int = 0):
+    def _Display(self, head: Progress, current_PCB: Progress = None, name: str = '', time: int = 0):  # 此函数用于展示进程信息
         print(f'{time} time.Current PCB ID:{head.ID if not current_PCB else current_PCB.ID}' if time <= len(
             self.PCB_list) else f'Finish {name}.Show queue:')
         print(f'ID\t\tArriveTime\t\tCPUTime<Occupied>\t\tAllTime\t\tPriority\tState')
@@ -70,17 +70,11 @@ class ProgressControlScheduling:
             head = head.next
         print()
 
-    def conclusion(self, total_waiting_time: int):
+    def conclusion(self, total_waiting_time: int):  # 此函数用于展示每个进程等待的平均时间
         print(f'The average time of each progress：{total_waiting_time / self.PCB_length}s.')
         print(f'Total time of all progress：{total_waiting_time}s.')
 
-    def _sort_PCB(self, key: str) -> list:
-        if key == 'AllTime':
-            return sorted(self.PCB_list, key=lambda x: x.AllTime)
-        else:
-            return sorted(self.PCB_list, key=lambda x: x.Priority, reverse=True)
-
-    def reset(self, queue_list: list) -> Progress:
+    def reset(self, queue_list: list) -> Progress:  # 此函数用于重置链表
         for progress_index in range(len(queue_list) - 1):
             queue_list[progress_index].next = queue_list[progress_index + 1]
         queue_list[-1].next = None
@@ -97,7 +91,7 @@ class ProgressControlScheduling:
         queue_list[-1].State = ProgressControlScheduling.READY
         queue_list[-1].ArriveTime = 0
 
-    def search_special_PCB(self, head: Progress, type: str = 'P') -> Progress:
+    def search_special_PCB(self, head: Progress, type: str = 'P') -> Progress:  # 此函式用于寻找指定的进程（时间最短，优先级最高）
         pre_PCB: Progress = head
         current_PCB: Progress = head.next
 
@@ -116,7 +110,7 @@ class ProgressControlScheduling:
         alternative_PCB.next = None
         return alternative_PCB
 
-    def add_head(self) -> Progress:
+    def add_head(self) -> Progress:  # 此函数用于添加头节点， 方便删除节点
         head_: Progress = Progress(Priority=-1)
         head_.next = self.PCB_list[0]
         return head_
@@ -189,7 +183,9 @@ class ProgressControlScheduling:
         [_ for _ in self.reset(self.PCB_list)]
 
     def _RR(self):
+
         time_slice = int(input('Please input the size of time slice:'))
+        print(f'{"-" * 35}Start RR{"-" * 35}\n')
         next_PCB: Progress = self.head_PCB
         count_PCB: int = self.count_PCB
         all_time_list: list = [i.AllTime for i in self.PCB_list]
@@ -218,7 +214,7 @@ class ProgressControlScheduling:
             next_PCB = next_PCB.next
         print(f'The average time of each progress：{total_waiting_time / len(all_time_list)}s.')
         print(f'Total time of all progress：{total_waiting_time}s.')
-        print(f'{"-" * 35}Finish 优先调度算法{"-" * 35}\n')
+        print(f'{"-" * 35}Finish RR{"-" * 35}\n')
         [_ for _ in self.reset(self.PCB_list)]
 
 
