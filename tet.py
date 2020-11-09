@@ -1,7 +1,3 @@
-def x(n):
-    for i in range(10):
-        print(i)
-        yield
-next(x(1))
-print()
-[_ for _ in x(2)]
+import datetime
+a = datetime.datetime.now()
+print(a+datetime.timedelta(days=2, hours=7))

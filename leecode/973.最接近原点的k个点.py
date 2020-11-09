@@ -1,0 +1,7 @@
+class Solution:
+    def kClosest(self, points: list, K: int) -> list:
+        return sorted(points, key=lambda x: x[0] ** 2 + x[1] ** 2)[:K]
+
+
+s = Solution()
+print(s.kClosest(points = [[3,3],[5,-1],[-2,4]], K = 2))
