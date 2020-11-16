@@ -5,7 +5,7 @@ class Process:
         self.max_require: dict = max_require
         self.allowed_resource: dict = {i: 0 for i in max_require.keys()}
         self.need_resource: dict = {i: self.max_require[i] - self.allowed_resource[i] for i in max_require.keys()}
-        self.condition:bool = False
+        self.condition: bool = False
 
     def __call__(self):
         self.allowed_resource: dict = {i: 0 for i in self.max_require.keys()}
@@ -20,7 +20,6 @@ class Process:
         if not any(self.need_resource.values()):
             self.condition = True
 
-
     def _check_finished(self) -> bool:
         for resource_name, resource_number in self.max_require.items():
             if self.allowed_resource[resource_name] != resource_number:
@@ -29,7 +28,8 @@ class Process:
 
     def _display_information(self):
         print(
-            f'{self.index}\t\t\t{"  ".join([str(i) for i in self.max_require.values()])}\t\t\t\t{"  ".join([str(i) for i in self.allowed_resource.values()])}\t\t\t\t{"  ".join([str(i) for i in self.need_resource.values()])}\t\t\t\t{self.condition}')
+            f'{self.index}\t\t\t{"  ".join([str(i) for i in self.max_require.values()])}\t\t\t\t'
+            f'{"  ".join([str(i) for i in self.allowed_resource.values()])}\t\t\t\t{"  ".join([str(i) for i in self.need_resource.values()])}\t\t\t\t{self.condition}')
 
 
 class ResourceControlCenter:
@@ -43,10 +43,8 @@ class ResourceControlCenter:
 
     def _take_back_or_allocate_resource(self, resource_dict: dict, flag: bool = False):
         if flag:
-            print(self.attainable_resource,resource_dict, 'a')
             for i in self.resource_name_list:
                 self.attainable_resource[i] += resource_dict[i]
-            print(self.attainable_resource, 'a')
         else:
             for i in self.resource_name_list:
                 self.attainable_resource[i] -= resource_dict[i]
@@ -60,11 +58,14 @@ class Banker:
             p_index = eval(input('Input the number of process that you want to allocate resource:'))
             process: Process = self.works_dict.get(p_index)
             if process and not process.condition:
-                allocate_dict: dict = {name: number for name, number in zip(self.rcc.resource_name_list, [int(i) for i in input('Input the number of resource:').split(' ')])}
-                take_back_resource:dict = process.allowed_resource.copy()
+                allocate_dict: dict = {name: number for name, number in zip(self.rcc.resource_name_list,
+                                                                            [int(i) for i in input('Input the number of resource:').split(' ')])}
+                take_back_resource: dict = process.allowed_resource.copy()
+                if not all([allocate_dict[i]<=self.rcc.attainable_resource[i] for i in self.rcc.resource_name_list]):
+                    print('oversubscribe! Refuse allocate resource!')
+                    continue
                 process._apply_resource(allocate_dict)
                 if process.condition:
-                    print(take_back_resource, 'a')
                     self.rcc._take_back_or_allocate_resource(take_back_resource, flag=True)
                 else:
                     self.rcc._take_back_or_allocate_resource(allocate_dict)
@@ -72,7 +73,6 @@ class Banker:
             else:
                 print('--->Process not exist or have finished.<---')
             self.work_list = [i for i in self.work_list if not i.condition]
-            self._display()
             continue_flag = True if input('Do you want continue?(y/n)') == 'y' else False
 
     def _distribute_resource(self) -> None:
@@ -84,20 +84,17 @@ class Banker:
             attainable_resource[p_name] = p_resource
         self.rcc: ResourceControlCenter = ResourceControlCenter(attainable_resource=attainable_resource)
 
+
+
     def _initial_process(self) -> bool:
 
         self.works_number: int = int(input('Please input the number of works:'))
         self.works_dict: dict = {}
-        standard_list: list = list(self.rcc.max_resource.values())
         print(
             f'Please input the max resource number that each process required(it must be a {self.works_number}x{len(self.rcc.resource_name_list)} matrix.):')
         for index in range(self.works_number):
             initial_list: list = [int(i) for i in input(':').split(' ')]
-            while not all(i <= j for i, j in zip(initial_list, standard_list)):
-                print('--->Resource oversubscribed please reallocate resource!!<--')
-                initial_list: list = [int(i) for i in input(':').split(' ')]
-            self.works_dict[index] = Process(index=index, max_require={i: j for i, j in
-                                                                       zip(self.rcc.resource_name_list, initial_list)})
+            self.works_dict[index] = Process(index=index, max_require={i: j for i, j in zip(self.rcc.resource_name_list, initial_list)})
 
         self.work_list = [i for i in self.works_dict.values()]
 
@@ -105,29 +102,16 @@ class Banker:
         print(
             f'Please input the allowed resource number that each process required(it must be a {self.works_number}x{len(self.rcc.resource_name_list)} matrix.):')
         for i in range(self.works_number):
-            access_flag: bool = True
             distribute_list = [int(i) for i in input(':').split(' ')]
-            for j, p in enumerate(self.rcc.resource_name_list):
-                distribute_ = self.rcc.attainable_resource[p] - distribute_list[j]
-                if distribute_ < 0:
-                    access_flag = False
-                    overflow = not overflow
-                    print(
-                        f'!!!!---Process {self.works_dict[i].index} Oversubscribed resources!Refuse distribute resource---!!!!')
-                    break
             dis_dic = {i: j for i, j in zip(self.rcc.resource_name_list, distribute_list)}
-            if access_flag:
-                self.works_dict[i]._apply_resource(dis_dic)
-                if not self.works_dict[i].condition:
-                    self.rcc._take_back_or_allocate_resource(dis_dic)
-
+            self.works_dict[i]._apply_resource(dis_dic)
         self.work_list = [i for i in self.work_list if not i.condition]
         return overflow
 
     def __init__(self):
         self._distribute_resource()
         self._initial_process()
-
+        self._display()
         while not self._check_safe():
             re_flag = input(f'Do you want to reallocate resources?(y/n)')
             if re_flag == 'y':
@@ -139,11 +123,11 @@ class Banker:
 
     def _display(self):
         print(f'\nEach resource available condition:')
-        [print(f'--->The resource:{i}, which residue resource number:{j}') for i, j in self.rcc.attainable_resource.items()]
+        [print(f'--->The resource:{i}, which residue resource number:{j}') for i, j in
+         self.rcc.attainable_resource.items()]
         print(f'\nIndex\t\tMax\t\t\t\tAllocation\t\t\t\tNeed\t\t\t\tstatus')
         for i in range(self.works_number):
             self.works_dict[i]._display_information()
-
 
     def _check_safe(self) -> bool:
         safe_sequence = []
